@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan My Trip Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .itinerary-day {
+            border-left: 3px solid #3498db;
+            padding-left: 1.5rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Plan My Trip Bot 🌏</h1>
+            <p class="text-lg text-gray-600 mt-2">Create your perfect travel plan instantly.</p>
+        </header>
+
+        <main>
+            <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+                <form id="tripForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="source" class="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                            <input type="text" id="source" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Delhi" required>
+                        </div>
+                        <div>
+                            <label for="destination" class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                            <input type="text" id="destination" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Mumbai" required>
+                        </div>
+                        <div>
+                            <label for="days" class="block text-sm font-medium text-gray-700 mb-1">Number of Days</label>
+                            <input type="number" id="days" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 5" min="1" required>
+                        </div>
+                         <div>
+                            <label for="transport" class="block text-sm font-medium text-gray-700 mb-1">Means of Transport</label>
+                            <select id="transport" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option>Car</option>
+                                <option>Train</option>
+                                <option>Flight</option>
+                                <option>Bus</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300">
+                        Generate Trip Plan
+                    </button>
+                </form>
+            </div>
+
+            <div id="loading" class="hidden text-center">
+                <div class="loader"></div>
+                <p>Planning your amazing trip...</p>
+            </div>
+            
+            <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                <strong class="font-bold">Oops!</strong>
+                <span class="block sm:inline" id="errorMessage">Something went wrong. Please try again.</span>
+            </div>
+
+
+            <div id="results" class="hidden space-y-8">
+                <!-- Ticket Booking Section -->
+                <div id="booking-section" class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Ready to Go?</h2>
+                    <p class="text-gray-600 mb-4">Book your tickets now to make your trip a reality!</p>
+                    <a id="bookingBtn" href="#" target="_blank" class="w-full block text-center bg-orange-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 transition duration-300">
+                        Book Tickets
+                    </a>
+                </div>
+
+                <!-- Weather Section -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Current Weather in <span id="weather-destination"></span></h2>
+                    <div id="weather-info" class="text-lg"></div>
+                </div>
+
+                <!-- Visuals Section -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Visuals of <span id="gallery-destination"></span></h2>
+                    <!-- Image Gallery -->
+                    <div id="image-gallery" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6"></div>
+                    <!-- Video Section -->
+                    <div id="video-container" class="rounded-lg overflow-hidden shadow-md"></div>
+                </div>
+
+                <!-- Map Section -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Map of <span id="map-destination"></span></h2>
+                    <div id="map-container" class="w-full h-96 rounded-lg overflow-hidden">
+                         <iframe id="map-iframe" width="100%" height="100%" frameborder="0" style="border:0" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
+                    </div>
+                </div>
+
+                <!-- Highlights Section -->
+                <div id="highlights-section" class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Destination Highlights</h2>
+                    <div id="highlights-content" class="text-gray-700"></div>
+                </div>
+
+                <!-- Itinerary Section -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Your Trip Itinerary</h2>
+                        <button id="downloadBtn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300">
+                            Download
+                        </button>
+                    </div>
+                    <div id="itinerary" class="prose max-w-none text-gray-700"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const tripForm = document.getElementById('tripForm');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // --- API KEYS ---
+        const geminiApiKey = "AIzaSyAZZ-v6Qw_m31ykD2U4O6JKrWaTQEh_oJI"; 
+        const pexelsKey = 'PyQBSvRcT7cgs23lgWVdZtSblAkXfl0MVyEsECxGYi02lISQdPWHDIcQ';
+
+        tripForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loading.classList.remove('hidden');
+            results.classList.add('hidden');
+            error.classList.add('hidden');
+
+            if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
+                showError("Please add your Gemini API key to the script.");
+                loading.classList.add('hidden');
+                return;
+            }
+
+            const source = document.getElementById('source').value;
+            const destination = document.getElementById('destination').value;
+            const days = document.getElementById('days').value;
+            const transport = document.getElementById('transport').value;
+            
+            const prompt = `Plan a ${days}-day trip from ${source} to ${destination} by ${transport}. Provide a detailed daily itinerary. Start each day's plan with '**Day X: [Title]**'. Use bullet points with a '-' for activities. Also provide a short, comma-separated string of 4-5 highlights or things the destination is famous for. Also, include the current weather in ${destination} (temperature in Celsius and a brief description), and 6 general, single-word or two-word search terms for beautiful photos of ${destination} (e.g., 'landmark', 'food', 'culture').`;
+            
+            try {
+                const tripData = await generateTripPlan(prompt);
+
+                if (tripData) {
+                    await displayResults(tripData, source, destination, transport);
+                }
+                
+            } catch (err) {
+                console.error(err);
+                if (!error.classList.contains('hidden')) {
+                    // Don't overwrite a specific error
+                } else {
+                    showError('An unexpected error occurred. Please check the console for details.');
+                }
+            } finally {
+                loading.classList.add('hidden');
+            }
+        });
+        
+        async function generateTripPlan(prompt) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: { 
+                            "itinerary": { "type": "STRING" }, 
+                            "highlights": { "type": "STRING" },
+                            "weather": { "type": "OBJECT", "properties": { "temperature_celsius": { "type": "NUMBER" }, "description": { "type": "STRING" }}}, 
+                            "image_search_terms": { "type": "ARRAY", "items": { "type": "STRING" }}
+                        }
+                    }
+                }
+            };
+            
+            try {
+                let response;
+                let success = false;
+                let delay = 1000;
+                for (let i = 0; i < 5; i++) {
+                    response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (response.ok) { success = true; break; }
+                    if (response.status === 403) { throw new Error(`API request failed with status 403 (Forbidden). Please check that your Gemini API key is correct and enabled.`); }
+                    if (response.status === 429 || response.status >= 500) { await new Promise(resolve => setTimeout(resolve, delay)); delay *= 2; } 
+                    else { throw new Error(`API request failed with status ${response.status}`); }
+                }
+
+                if (!success) throw new Error('The AI service is currently unavailable after multiple retries.');
+
+                const result = await response.json();
+                
+                if (result.candidates?.[0]?.content?.parts?.[0]) {
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    try {
+                        return JSON.parse(jsonText);
+                    } catch(e) {
+                        console.error("Failed to parse JSON response from AI:", jsonText);
+                        showError("The AI returned an invalid response. Please try again.");
+                        return null;
+                    }
+                } else {
+                    throw new Error("Unexpected API response structure from AI.");
+                }
+            } catch (err) {
+                console.error("Error in generateTripPlan:", err);
+                showError(`Failed to generate trip plan: ${err.message}`);
+                throw err;
+            }
+        }
+
+        async function displayResults(data, source, destination, transport) {
+            try {
+                // Booking Link
+                setupBookingLink(source, destination, transport);
+
+                // Weather
+                document.getElementById('weather-destination').textContent = destination;
+                document.getElementById('weather-info').innerHTML = `<p>${data.weather.temperature_celsius}°C, ${data.weather.description}</p>`;
+                
+                // Visuals
+                document.getElementById('gallery-destination').textContent = destination;
+                await Promise.all([fetchAndDisplayVideo(destination), fetchAndDisplayImages(data.image_search_terms, destination)]);
+                
+                // Map
+                document.getElementById('map-destination').textContent = destination;
+                document.getElementById('map-iframe').src = `https://www.google.com/maps?q=${encodeURIComponent(destination)}&output=embed`;
+
+                // Highlights
+                formatHighlights(data.highlights);
+                
+                // Itinerary
+                formatItinerary(data.itinerary);
+                
+                // Download Button
+                document.getElementById('downloadBtn').onclick = () => {
+                    const blob = new Blob([data.itinerary], { type: 'text/plain;charset=utf-8' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Itinerary_${destination}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                };
+
+                results.classList.remove('hidden');
+            } catch (err) {
+                console.error("Error in displayResults:", err);
+                showError(`Failed to display results: ${err.message}`);
+                throw err;
+            }
+        }
+
+        function setupBookingLink(source, destination, transport) {
+            const bookingSection = document.getElementById('booking-section');
+            const bookingBtn = document.getElementById('bookingBtn');
+            let bookingUrl = '';
+
+            switch (transport) {
+                case 'Train':
+                    bookingUrl = 'https://www.irctc.co.in/nget/train-search';
+                    bookingBtn.textContent = 'Book Train on IRCTC';
+                    break;
+                case 'Flight':
+                    bookingUrl = `https://www.google.com/flights?q=${encodeURIComponent(source)}+to+${encodeURIComponent(destination)}`;
+                    bookingBtn.textContent = 'Book Flight on Google Flights';
+                    break;
+                case 'Bus':
+                    const sourceSlug = source.toLowerCase().replace(/\s+/g, '-');
+                    const destSlug = destination.toLowerCase().replace(/\s+/g, '-');
+                    bookingUrl = `https://www.redbus.in/bus-tickets/${sourceSlug}-to-${destSlug}`;
+                    bookingBtn.textContent = 'Book Bus on Redbus';
+                    break;
+                case 'Car':
+                default:
+                    bookingSection.classList.add('hidden');
+                    break;
+            }
+
+            if (bookingUrl) {
+                bookingSection.classList.remove('hidden');
+                bookingBtn.href = bookingUrl;
+            }
+        }
+
+
+        async function fetchAndDisplayVideo(destination) {
+            const videoContainer = document.getElementById('video-container');
+            videoContainer.innerHTML = '';
+            try {
+                const videoUrl = `https://api.pexels.com/videos/search?query=${encodeURIComponent(destination)}&per_page=1`;
+                const videoResponse = await fetch(videoUrl, {
+                    headers: { Authorization: pexelsKey }
+                });
+                if (!videoResponse.ok) throw new Error(`Pexels video request failed with status ${videoResponse.status}`);
+                const videoData = await videoResponse.json();
+                if (videoData.videos.length > 0) {
+                    const video = videoData.videos[0].video_files[0];
+                    videoContainer.innerHTML = `<video controls class="w-full rounded-lg"><source src="${video.link}" type="${video.file_type}">Your browser does not support the video tag.</video>`;
+                }
+            } catch (err) {
+                console.error('Failed to fetch video:', err);
+                videoContainer.innerHTML = `<p class="text-center text-red-500">Could not load video.</p>`;
+            }
+        }
+
+        async function fetchAndDisplayImages(searchTerms, destination) {
+            const imageGallery = document.getElementById('image-gallery');
+            imageGallery.innerHTML = '';
+            const imagePromises = searchTerms.slice(0, 6).map(async (term) => {
+                const pexelsUrl = `https://api.pexels.com/v1/search?query=${encodeURIComponent(destination)}%20${encodeURIComponent(term)}&per_page=1`;
+                try {
+                    const response = await fetch(pexelsUrl, {
+                         headers: { Authorization: pexelsKey }
+                    });
+                    if (!response.ok) return null;
+                    const imageData = await response.json();
+                    return imageData.photos[0];
+                } catch (err) {
+                    console.error(`Failed to fetch image for term: ${term}`, err);
+                    return null;
+                }
+            });
+
+            const images = await Promise.all(imagePromises);
+            const validImages = images.filter(img => img);
+
+            if (validImages.length > 0) {
+                 validImages.forEach(imgData => {
+                    const img = document.createElement('img');
+                    img.src = imgData.src.large; // Changed from medium to large for better quality
+                    img.alt = imgData.alt;
+                    img.className = 'w-full h-full object-cover rounded-lg shadow-md';
+                    img.onerror = () => { img.src = `https://placehold.co/500x500/cccccc/ffffff?text=Image+Error`; };
+                    imageGallery.appendChild(img);
+                });
+            } else {
+                imageGallery.innerHTML = `<p class="col-span-full text-center">Could not find images for ${destination}. The Pexels API key might be invalid or have reached its limit.</p>`;
+            }
+        }
+
+        function formatHighlights(highlightsText) {
+            const highlightsDiv = document.getElementById('highlights-content');
+            const highlights = highlightsText.split(',').map(item => `<strong>${item.trim()}</strong>`).join(' &middot; ');
+            highlightsDiv.innerHTML = `<p>${highlights}</p>`;
+        }
+
+        function formatItinerary(itineraryText) {
+            const itineraryDiv = document.getElementById('itinerary');
+            itineraryDiv.innerHTML = '';
+            const days = itineraryText.split(/\*\*(Day \d+:.*?)\*\*/g).filter(Boolean);
+
+            for (let i = 0; i < days.length; i += 2) {
+                const dayTitle = days[i];
+                const dayContent = days[i+1];
+
+                if (dayTitle && dayContent) {
+                    const dayElement = document.createElement('div');
+                    dayElement.className = 'itinerary-day';
+                    const titleElement = document.createElement('h3');
+                    titleElement.className = 'text-xl font-bold text-gray-900 mb-3';
+                    titleElement.textContent = dayTitle.replace(/\*\*/g, '');
+                    dayElement.appendChild(titleElement);
+                    const listElement = document.createElement('ul');
+                    listElement.className = 'list-disc list-inside space-y-2';
+                    const activities = dayContent.trim().split('-').filter(activity => activity.trim() !== '');
+                    activities.forEach(activity => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = activity.trim();
+                        listElement.appendChild(listItem);
+                    });
+                    dayElement.appendChild(listElement);
+                    itineraryDiv.appendChild(dayElement);
+                }
+            }
+        }
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            error.classList.remove('hidden');
+        }
+
+    </script>
+    <footer class="text-center py-4 mt-8">
+        <p class="text-sm text-gray-500">Project By Dev Mahant.</p>
+    </footer>
+</body>
+</html>
